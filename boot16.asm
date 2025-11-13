@@ -14,33 +14,19 @@ mov [boot_drive], dl    ; BIOS passed boot drive in DL
 mov ah, 0x00
 mov dl, [boot_drive]
 int 0x13
-; --- read stage 2 at CHS (0,0,2) into 0000:1000 ---
-mov bx, 0x1000          ; buffer offset
-mov ah, 0x02            ; INT 13h: read sectors
-mov al, 1               ; read 1 sectors
-mov ch, 0               ; cylinder 0
-mov cl, 2               ; sector 2 (sector numbers start at 1)
-mov dh, 0               ; head 0
-mov dl, [boot_drive]    ; same boot drive
+; --- read stage 2 using LBA into 0000:1000 ---
+mov si, dap           ; DS:SI → dap
+mov dl, [boot_drive]  ; BIOS drive
+mov ah, 0x42          ; extended read
 int 0x13
-jc  disk_error
 jmp 0x0000:0x1000       ; jump to loaded stage-2 code
-disk_error:
-mov si, msg
-call print
-jmp $
-print:
-; DS is 0x0000 from above; SI points to string
-mov ah, 0x0E            ; teletype output
-.next:
-lodsb                   ; AL = [DS:SI], SI++
-or  al, al
-jz  .done
-int 0x10
-jmp .next
-.done:
-ret
-msg db "Disk read error!", 0
+; --- data decleration --- ;
+dap:
+    db 16, 0        ; sizeof packet, reserved
+    dw 10           ; sectors (filled later)
+    dw 0x0000       ; offset
+    dw 0x1000       ; segment
+    dq 1            ; LBA
 boot_drive db 0
 times 510 - ($ - $$) db 0
 dw 0xAA55
