@@ -19,6 +19,7 @@ mov si, dap           ; DS:SI → dap
 mov dl, [boot_drive]  ; BIOS drive
 mov ah, 0x42          ; extended read
 int 0x13
+mov dl, [boot_drive]
 jmp 0x0000:0x1000       ; jump to loaded stage-2 code
 ; --- data decleration --- ;
 dap:
