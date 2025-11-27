@@ -25,8 +25,8 @@ jmp 0x0000:0x1000       ; jump to loaded stage-2 code
 dap:
     db 16, 0        ; sizeof packet, reserved
     dw 10           ; sectors (filled later)
-    dw 0x0000       ; offset
-    dw 0x1000       ; segment
+    dw 0x1000       ; offset
+    dw 0x0000       ; segment
     dq 1            ; LBA
 boot_drive db 0
 times 510 - ($ - $$) db 0
