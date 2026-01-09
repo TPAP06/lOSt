@@ -21,7 +21,8 @@ KERNEL_C_SOURCES = $(wildcard $(KERNEL_DIR)/*.c) \
                    $(wildcard $(KERNEL_DIR)/drivers/*.c) \
                    $(wildcard $(KERNEL_DIR)/lib/*.c) \
                    $(wildcard $(KERNEL_DIR)/interrupts/*.c) \
-                   $(wildcard $(KERNEL_DIR)/shell/*.c)
+                   $(wildcard $(KERNEL_DIR)/shell/*.c) \
+                   $(wildcard $(KERNEL_DIR)/memory/*.c)
 
 KERNEL_ASM_SOURCES = $(KERNEL_DIR)/kernel_entry.asm \
                      $(KERNEL_DIR)/interrupts/isr.asm
@@ -75,6 +76,9 @@ $(KERNEL_DIR)/interrupts/%.o: $(KERNEL_DIR)/interrupts/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(KERNEL_DIR)/shell/%.o: $(KERNEL_DIR)/shell/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(KERNEL_DIR)/memory/%.o: $(KERNEL_DIR)/memory/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Link kernel to ELF

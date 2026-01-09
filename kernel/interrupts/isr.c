@@ -14,9 +14,6 @@ static irq_handler_t irq_handlers[16] = {0};
 // Remap PIC
 static void pic_remap(void)
 {
-    uint8_t mask1 = inb(PIC1_DATA);
-    uint8_t mask2 = inb(PIC2_DATA);
-    
     outb(PIC1_COMMAND, 0x11);
     io_wait();
     outb(PIC2_COMMAND, 0x11);
@@ -44,13 +41,33 @@ static void pic_remap(void)
 }
 
 // ISR handler - MINIMAL (just halt)
+// ISR handler - show exception info
 void isr_handler(registers_t *regs)
 {
     // Write to VGA memory
     volatile uint16_t *vga = (volatile uint16_t *)0xB8000;
-    vga[0] = 'E' | 0x4F00;
+    vga[0] = 'E' | 0x4F00;  // White on red
     vga[1] = 'X' | 0x4F00;
     vga[2] = 'C' | 0x4F00;
+    
+    // Show exception number
+    uint8_t num = regs->int_no;
+    vga[3] = ' ' | 0x4F00;
+    vga[4] = ((num / 10) + '0') | 0x4F00;
+    vga[5] = ((num % 10) + '0') | 0x4F00;
+    
+    // Show error code if present
+    vga[7] = 'E' | 0x4F00;
+    vga[8] = 'R' | 0x4F00;
+    vga[9] = 'R' | 0x4F00;
+    vga[10] = ':' | 0x4F00;
+    
+    uint32_t err = regs->err_code;
+    for (int i = 0; i < 8; i++) {
+        uint8_t nibble = (err >> (28 - i*4)) & 0xF;
+        char c = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
+        vga[11 + i] = c | 0x4F00;
+    }
     
     // Halt
     while(1) {

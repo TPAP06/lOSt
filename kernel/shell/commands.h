@@ -28,19 +28,20 @@ const command_t *commands_get_all(int *count);
 int commands_parse(char *input, char **argv, int max_args);
 
 // Built-in command handlers
+// Built-in command handlers
 void cmd_help(int argc, char **argv);
 void cmd_clear(int argc, char **argv);
 void cmd_echo(int argc, char **argv);
 void cmd_info(int argc, char **argv);
 void cmd_uptime(int argc, char **argv);
+void cmd_date(int argc, char **argv);
+void cmd_sleep(int argc, char **argv);
+void cmd_benchmark(int argc, char **argv);
 void cmd_reboot(int argc, char **argv);
 void cmd_shutdown(int argc, char **argv);
 void cmd_calc(int argc, char **argv);
 void cmd_color(int argc, char **argv);
 void cmd_meminfo(int argc, char **argv);
-void cmd_uptime(int argc, char **argv);
-void cmd_date(int argc, char **argv);
-void cmd_sleep(int argc, char **argv);
-void cmd_benchmark(int argc, char **argv);
+void cmd_memtest(int argc, char **argv); 
 
 #endif // COMMANDS_H

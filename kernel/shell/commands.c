@@ -5,6 +5,8 @@
 #include "../lib/string.h"
 #include "../lib/io.h"
 #include "../drivers/timer.h"
+#include "../memory/pmm.h"
+#include "../memory/heap.h"
 
 // Command registry
 static command_t commands[] = {
@@ -21,10 +23,11 @@ static command_t commands[] = {
     {"calc", "Simple calculator (add, sub, mul, div)", cmd_calc},
     {"color", "Change text color", cmd_color},
     {"meminfo", "Display memory information", cmd_meminfo},
+    {"memtest", "Test memory allocation", cmd_memtest}
 };
 
-static const int command_count = sizeof(commands) / sizeof(command_t);
-
+// Just use the macro, remove the const int
+#define COMMAND_COUNT (sizeof(commands) / sizeof(command_t))
 // Initialize commands
 void commands_init(void)
 {
@@ -35,7 +38,7 @@ void commands_init(void)
 const command_t *commands_get_all(int *count)
 {
     if (count) {
-        *count = command_count;
+        *count = COMMAND_COUNT;
     }
     return commands;
 }
@@ -68,7 +71,7 @@ int commands_parse(char *input, char **argv, int max_args)
 // Execute a command
 bool commands_execute(const char *name, int argc, char **argv)
 {
-    for (int i = 0; i < command_count; i++) {
+    for (size_t i = 0; i < COMMAND_COUNT; i++) {  // Changed int to size_t
         if (strcmp(name, commands[i].name) == 0) {
             commands[i].handler(argc, argv);
             return true;
@@ -98,7 +101,7 @@ void cmd_help(int argc, char **argv)
     screen_write_color("Available Commands:\n", COLOR_YELLOW, COLOR_BLACK);
     screen_write_color("-------------------\n", COLOR_YELLOW, COLOR_BLACK);
     
-    for (int i = 0; i < command_count; i++) {
+    for (size_t i = 0; i < COMMAND_COUNT; i++) {
         screen_write("  ");
         screen_write_color(commands[i].name, COLOR_LIGHT_CYAN, COLOR_BLACK);
         
@@ -441,14 +444,110 @@ void cmd_meminfo(int argc, char **argv)
     (void)argv;
     
     screen_write_color("\nMemory Information:\n", COLOR_YELLOW, COLOR_BLACK);
-    screen_write_color("-------------------\n", COLOR_YELLOW, COLOR_BLACK);
+    screen_write_color("===================\n", COLOR_YELLOW, COLOR_BLACK);
+    
+    uint32_t total = pmm_get_total_memory();
+    uint32_t used = pmm_get_used_memory();
+    uint32_t free = pmm_get_free_memory();
+    uint32_t free_pages = pmm_get_free_pages();
+    
+    char num_str[32];
+    
+    // Total memory
     screen_write("  Total Memory:  ");
-    screen_write_color("Not yet implemented\n", COLOR_YELLOW, COLOR_BLACK);
-    screen_write("  Free Memory:   ");
-    screen_write_color("Not yet implemented\n", COLOR_YELLOW, COLOR_BLACK);
+    itoa(total, num_str, 10);
+    screen_write_color(num_str, COLOR_LIGHT_CYAN, COLOR_BLACK);
+    screen_write(" KB\n");
+    
+    // Used memory
     screen_write("  Used Memory:   ");
-    screen_write_color("Not yet implemented\n", COLOR_YELLOW, COLOR_BLACK);
+    itoa(used, num_str, 10);
+    screen_write_color(num_str, COLOR_LIGHT_RED, COLOR_BLACK);
+    screen_write(" KB\n");
+    
+    // Free memory
+    screen_write("  Free Memory:   ");
+    itoa(free, num_str, 10);
+    screen_write_color(num_str, COLOR_LIGHT_GREEN, COLOR_BLACK);
+    screen_write(" KB\n");
+    
+    // Free pages
+    screen_write("  Free Pages:    ");
+    itoa(free_pages, num_str, 10);
+    screen_write_color(num_str, COLOR_LIGHT_CYAN, COLOR_BLACK);
+    screen_write(" (4KB pages)\n");
+    
+    // Usage percentage
+    if (total > 0) {
+        uint32_t percent = (used * 100) / total;
+        screen_write("  Usage:         ");
+        itoa(percent, num_str, 10);
+        
+        if (percent < 50) {
+            screen_write_color(num_str, COLOR_LIGHT_GREEN, COLOR_BLACK);
+        } else if (percent < 80) {
+            screen_write_color(num_str, COLOR_YELLOW, COLOR_BLACK);
+        } else {
+            screen_write_color(num_str, COLOR_LIGHT_RED, COLOR_BLACK);
+        }
+        screen_write("%\n");
+    }
+    
     screen_write("\n");
-    screen_write("(Memory management will be added in Phase 4)\n");
 }
 
+// Memory test command
+void cmd_memtest(int argc, char **argv)
+{
+    (void)argc;
+    (void)argv;
+    
+    screen_write_color("\nMemory Allocation Test:\n", COLOR_YELLOW, COLOR_BLACK);
+    screen_write_color("=======================\n", COLOR_YELLOW, COLOR_BLACK);
+    
+    // Test 1: Simple allocation
+    screen_write("Test 1: Allocating 1KB... ");
+    void *ptr1 = malloc(1024);
+    if (ptr1) {
+        screen_write_color("OK\n", COLOR_LIGHT_GREEN, COLOR_BLACK);
+        free(ptr1);
+        screen_write("        Freed successfully\n");
+    } else {
+        screen_write_color("FAILED\n", COLOR_LIGHT_RED, COLOR_BLACK);
+    }
+    
+    // Test 2: Multiple allocations
+    screen_write("Test 2: Multiple allocations... ");
+    void *ptrs[10];
+    bool success = true;
+    for (int i = 0; i < 10; i++) {
+        ptrs[i] = malloc(512);
+        if (ptrs[i] == NULL) {
+            success = false;
+            break;
+        }
+    }
+    if (success) {
+        screen_write_color("OK\n", COLOR_LIGHT_GREEN, COLOR_BLACK);
+        for (int i = 0; i < 10; i++) {
+            free(ptrs[i]);
+        }
+        screen_write("        All freed successfully\n");
+    } else {
+        screen_write_color("FAILED\n", COLOR_LIGHT_RED, COLOR_BLACK);
+    }
+    
+    // Test 3: Large allocation
+    screen_write("Test 3: Large allocation (16KB)... ");
+    void *ptr_large = malloc(16384);
+    if (ptr_large) {
+        screen_write_color("OK\n", COLOR_LIGHT_GREEN, COLOR_BLACK);
+        free(ptr_large);
+        screen_write("        Freed successfully\n");
+    } else {
+        screen_write_color("FAILED\n", COLOR_LIGHT_RED, COLOR_BLACK);
+    }
+    
+    screen_write("\n");
+    screen_write_color("All tests completed!\n", COLOR_LIGHT_GREEN, COLOR_BLACK);
+}
