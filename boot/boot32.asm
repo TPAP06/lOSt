@@ -198,7 +198,7 @@ check_long_mode:
     xor eax, eax
     ret
 
-; --- Set up identity paging for first 4MB ---
+; --- Set up identity paging for first 16MB ---
 setup_paging:
     ; Clear page tables
     mov edi, PML4
@@ -216,10 +216,20 @@ setup_paging:
     or eax, 3
     mov [PDPT], eax
 
-    ; PDT[0] → first 2MB huge page (covers 0x000000-0x200000)
-    mov eax, 0
-    or eax, 0b10000011      ; present + writable + huge page (2MB)
-    mov [PDT], eax
+    ; Map first 16MB using 2MB huge pages (8 entries in PDT)
+    ; Entry format: physical_address | flags
+    ; Flags: bit 0 = present, bit 1 = writable, bit 7 = huge page (2MB)
+    
+    mov edi, PDT            ; Pointer to PDT
+    mov eax, 0x00000000     ; Start at physical address 0
+    or eax, 0x83            ; present + writable + huge page
+    mov ecx, 8              ; Map 8 * 2MB = 16MB
+    
+.map_loop:
+    mov [edi], eax          ; Write entry
+    add eax, 0x200000       ; Next 2MB
+    add edi, 8              ; Next entry (8 bytes per entry)
+    loop .map_loop
 
     ret
 
