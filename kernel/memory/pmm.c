@@ -51,17 +51,20 @@ void pmm_init(uint32_t total_memory_kb)
     memset(page_bitmap, 0, sizeof(page_bitmap));
     
     // Calculate total pages
-    // Memory layout: assume usable memory starts at 2MB (to be safe)
-    // and extends to total_memory_kb
+    // Memory layout: assume usable memory starts at 2MB (0x200000)
     uint32_t usable_memory = total_memory_kb * 1024;  // Convert to bytes
     
-    // Start allocating from 2MB (0x200000)
+    // Start allocating from 2MB
     uint32_t start_addr = 0x200000;
+    
+    // DEBUG: What values do we have?
+    // usable_memory should be larger than 2MB
     
     if (usable_memory > start_addr) {
         total_pages = (usable_memory - start_addr) / PAGE_SIZE;
     } else {
-        total_pages = 1024;  // Fallback: at least 4MB
+        // Fallback: assume at least 14MB available (16MB - 2MB)
+        total_pages = (14 * 1024 * 1024) / PAGE_SIZE;  // 3584 pages
     }
     
     // Limit to our bitmap size

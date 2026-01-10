@@ -497,6 +497,7 @@ void cmd_meminfo(int argc, char **argv)
 }
 
 // Memory test command
+// Memory test command with debugging
 void cmd_memtest(int argc, char **argv)
 {
     (void)argc;
@@ -505,25 +506,96 @@ void cmd_memtest(int argc, char **argv)
     screen_write_color("\nMemory Allocation Test:\n", COLOR_YELLOW, COLOR_BLACK);
     screen_write_color("=======================\n", COLOR_YELLOW, COLOR_BLACK);
     
-    // Test 1: Simple allocation
-    screen_write("Test 1: Allocating 1KB... ");
+    // Show memory status FIRST
+    screen_write("Memory status before tests:\n");
+    char num_str[32];
+    
+    uint32_t free_pages = pmm_get_free_pages();
+    itoa(free_pages, num_str, 10);
+    screen_write("  Free pages: ");
+    screen_write(num_str);
+    screen_write("\n");
+    
+    uint32_t free_kb = pmm_get_free_memory();
+    itoa(free_kb, num_str, 10);
+    screen_write("  Free memory: ");
+    screen_write(num_str);
+    screen_write(" KB\n\n");
+    
+    // ... rest of tests
+    // Test 1: Simple allocation with malloc
+    screen_write("Test 1: malloc(1024)... ");
     void *ptr1 = malloc(1024);
     if (ptr1) {
-        screen_write_color("OK\n", COLOR_LIGHT_GREEN, COLOR_BLACK);
+        screen_write_color("OK ", COLOR_LIGHT_GREEN, COLOR_BLACK);
+        
+        // Show address
+        char addr_str[32];
+        itoa((uint32_t)((uint64_t)ptr1 >> 32), addr_str, 16);
+        screen_write("(addr: 0x");
+        screen_write(addr_str);
+        itoa((uint32_t)((uint64_t)ptr1 & 0xFFFFFFFF), addr_str, 16);
+        screen_write(addr_str);
+        screen_write(")\n");
+        
         free(ptr1);
         screen_write("        Freed successfully\n");
     } else {
         screen_write_color("FAILED\n", COLOR_LIGHT_RED, COLOR_BLACK);
     }
     
-    // Test 2: Multiple allocations
-    screen_write("Test 2: Multiple allocations... ");
+    // Test 2: calloc - allocate and zero
+    screen_write("Test 2: calloc(10, 512)... ");
+    
+    // First try malloc to see if allocation works
+    void *test_malloc = malloc(5120);
+    if (!test_malloc) {
+        screen_write_color("FAILED - malloc failed\n", COLOR_LIGHT_RED, COLOR_BLACK);
+        return;
+    }
+    free(test_malloc);
+    screen_write_color("malloc OK, ", COLOR_LIGHT_GREEN, COLOR_BLACK);
+    
+    // Now try calloc
+    void *ptr_calloc = calloc(10, 512);
+    if (ptr_calloc) {
+        screen_write_color("calloc OK\n", COLOR_LIGHT_GREEN, COLOR_BLACK);
+        
+        // Verify it's zeroed (check first few bytes)
+        unsigned char *bytes = (unsigned char*)ptr_calloc;
+        bool is_zeroed = true;
+        for (int i = 0; i < 10; i++) {
+            if (bytes[i] != 0) {
+                is_zeroed = false;
+                break;
+            }
+        }
+        
+        if (is_zeroed) {
+            screen_write("        Memory properly zeroed\n");
+        } else {
+            screen_write_color("        WARNING: Memory not zeroed!\n", COLOR_YELLOW, COLOR_BLACK);
+        }
+        
+        free(ptr_calloc);
+        screen_write("        Freed successfully\n");
+    } else {
+        screen_write_color("FAILED\n", COLOR_LIGHT_RED, COLOR_BLACK);
+    }
+    
+    // Test 3: Multiple allocations
+    screen_write("Test 3: Multiple malloc... ");
     void *ptrs[10];
     bool success = true;
     for (int i = 0; i < 10; i++) {
         ptrs[i] = malloc(512);
         if (ptrs[i] == NULL) {
             success = false;
+            screen_write_color("FAILED at allocation ", COLOR_LIGHT_RED, COLOR_BLACK);
+            char num[16];
+            itoa(i, num, 10);
+            screen_write(num);
+            screen_write("\n");
             break;
         }
     }
@@ -533,21 +605,8 @@ void cmd_memtest(int argc, char **argv)
             free(ptrs[i]);
         }
         screen_write("        All freed successfully\n");
-    } else {
-        screen_write_color("FAILED\n", COLOR_LIGHT_RED, COLOR_BLACK);
-    }
-    
-    // Test 3: Large allocation
-    screen_write("Test 3: Large allocation (16KB)... ");
-    void *ptr_large = malloc(16384);
-    if (ptr_large) {
-        screen_write_color("OK\n", COLOR_LIGHT_GREEN, COLOR_BLACK);
-        free(ptr_large);
-        screen_write("        Freed successfully\n");
-    } else {
-        screen_write_color("FAILED\n", COLOR_LIGHT_RED, COLOR_BLACK);
     }
     
     screen_write("\n");
-    screen_write_color("All tests completed!\n", COLOR_LIGHT_GREEN, COLOR_BLACK);
+    screen_write_color("Tests completed!\n", COLOR_LIGHT_GREEN, COLOR_BLACK);
 }

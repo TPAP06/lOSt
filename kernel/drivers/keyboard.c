@@ -1,4 +1,4 @@
-// kernel/drivers/keyboard.c - Enhanced with arrow keys
+// kernel/drivers/keyboard.c
 
 #include "keyboard.h"
 #include "screen.h"
@@ -184,32 +184,6 @@ unsigned char keyboard_getchar(void)
         __asm__ volatile ("hlt");
     }
     return buffer_get();
-}
-
-// Read line (simple version without history)
-void keyboard_readline(char *buffer, int max_length)
-{
-    int pos = 0;
-    
-    while (pos < max_length - 1) {
-        unsigned char c = keyboard_getchar();
-        
-        if (c == '\n') {
-            screen_putchar('\n');
-            break;
-        } else if (c == '\b') {
-            if (pos > 0) {
-                pos--;
-                screen_putchar('\b');
-            }
-        } else if (c >= 32 && c < 127) {  // Printable ASCII only
-            buffer[pos] = (char)c;
-            pos++;
-            screen_putchar((char)c);
-        }
-    }
-    
-    buffer[pos] = '\0';
 }
 
 // Read line with history support

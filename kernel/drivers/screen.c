@@ -71,8 +71,7 @@ void screen_putchar(char c)
         cursor_x = 0;
     } else if (c == '\t') {
         cursor_x = (cursor_x + 4) & ~(4 - 1); // Align to next 4-space tab stop
-    } else if (c == '\b') {
-        // Backspace
+    } else if (c == '\b') {// Backspace
         if (cursor_x > 0) {
             cursor_x--;
             int offset = cursor_y * SCREEN_WIDTH + cursor_x;
