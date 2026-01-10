@@ -38,4 +38,7 @@ void keyboard_readline_history(char *buffer, int max_length,
                                 char history[][256], int history_max, 
                                 int history_count, int *history_write_pos);
 
+// Keyboard state (read-only access)
+extern bool ctrl_pressed;
+
 #endif // KEYBOARD_H

@@ -1,11 +1,19 @@
-// kernel/drivers/screen.h - VGA text mode screen driver
+// kernel/drivers/screen.h
 
 #ifndef SCREEN_H
 #define SCREEN_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
-// VGA color codes
+// Screen dimensions
+#define SCREEN_WIDTH 80
+#define SCREEN_HEIGHT 25
+
+// Scrollback buffer size (lines)
+#define SCROLLBACK_LINES 1000
+
+// VGA colors
 typedef enum {
     COLOR_BLACK = 0,
     COLOR_BLUE = 1,
@@ -22,41 +30,35 @@ typedef enum {
     COLOR_LIGHT_RED = 12,
     COLOR_LIGHT_MAGENTA = 13,
     COLOR_YELLOW = 14,
-    COLOR_WHITE = 15
+    COLOR_WHITE = 15,
 } vga_color;
 
-// Screen dimensions
-#define SCREEN_WIDTH 80
-#define SCREEN_HEIGHT 25
-
-// Initialize the screen driver
+// Initialize screen
 void screen_init(void);
 
-// Clear the screen
-void screen_clear(void);
+// Initialize scrollback buffer (call AFTER heap_init)
+void screen_init_scrollback(void);
 
-// Write a single character
+// Write functions
+void screen_write(const char* str);
+void screen_write_color(const char* str, vga_color fg, vga_color bg);
 void screen_putchar(char c);
 
-// Write a string with default color
-void screen_write(const char *str);
+// Clear screen
+void screen_clear(void);
 
-// Write a string with specified color
-void screen_write_color(const char *str, vga_color fg, vga_color bg);
-
-// Set text color for subsequent writes
+// Color management
 void screen_set_color(vga_color fg, vga_color bg);
+uint8_t vga_color_byte(vga_color fg, vga_color bg);
 
-// Get cursor position
+// Cursor functions
 void screen_get_cursor(int *x, int *y);
-
-// Set cursor position
 void screen_set_cursor(int x, int y);
 
-// Scroll the screen up by one line
-void screen_scroll(void);
-
-// Create a color attribute byte
-uint8_t vga_color_byte(vga_color fg, vga_color bg);
+// Scrollback functions
+void screen_scroll_up(void);     // Page Up
+void screen_scroll_down(void);   // Page Down
+void screen_scroll_to_bottom(void);
+bool screen_is_at_bottom(void);
 
 #endif // SCREEN_H

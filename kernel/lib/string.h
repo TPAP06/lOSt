@@ -42,4 +42,5 @@ void itoa(int value, char *str, int base);
 // Convert string to integer
 int atoi(const char *str);
 
+void* memmove(void* dest, const void* src, size_t n);
 #endif // STRING_H

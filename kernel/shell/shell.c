@@ -5,6 +5,7 @@
 #include "../drivers/screen.h"
 #include "../drivers/keyboard.h"
 #include "../lib/string.h"
+#include "../drivers/screen.h"
 
 // Shell state
 static char input_buffer[SHELL_INPUT_MAX];
@@ -130,16 +131,19 @@ void shell_execute(const char *input)
 }
 
 // Main shell loop
-// Main shell loop
 void shell_run(void)
 {
     while (1) {
-        shell_print_prompt();
+        // Check if we're scrolled up
+        if (!screen_is_at_bottom()) {
+            // Show indicator
+            volatile uint16_t *vga = (volatile uint16_t *)0xB8000;
+            vga[79] = '^' | 0x0E00;  // Yellow up arrow in corner
+        }
         
-        // Read input with history support
+        shell_print_prompt();
         keyboard_readline_history(input_buffer, SHELL_INPUT_MAX,
                                   history, SHELL_HISTORY_SIZE, history_count, &history_write_pos);
-        
         shell_execute(input_buffer);
     }
 }
