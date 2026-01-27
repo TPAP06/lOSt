@@ -12,7 +12,7 @@ static int cursor_x = 0;
 static int cursor_y = 0;
 
 // Current color
-static uint8_t current_color;
+static uint16_t current_attribute;
 
 // Scrollback buffer (circular buffer of lines)
 #define BUFFER_LINES 200
@@ -20,15 +20,19 @@ static uint16_t line_buffer[BUFFER_LINES][SCREEN_WIDTH];
 static int buffer_start = 0;        // Oldest line in buffer
 static int buffer_count = 0;        // Number of lines in buffer
 static int scroll_offset = 0;       // How many lines scrolled up from bottom
-static bool scrollback_active = false;
+static bool follow_bottom = true; //
+
+// Holds the possition of the last char in each
+static uint8_t line_len[BUFFER_LINES];
 
 // Current screen content (what should be visible at scroll_offset=0)
+// It's just easier this way, i wont be bothered optimizing this out yet
 static uint16_t current_screen[SCREEN_HEIGHT][SCREEN_WIDTH];
 
-// Create VGA color byte
-uint8_t vga_color_byte(vga_color fg, vga_color bg)
+// Create VGA attribute byte
+uint16_t vga_attribute_byte(vga_color fg, vga_color bg)
 {
-    return fg | (bg << 4);
+    return (fg | (bg << 4)) << 8;
 }
 
 // Initialize screen (early)
@@ -36,8 +40,8 @@ void screen_init(void)
 {
     cursor_x = 0;
     cursor_y = 0;
-    current_color = vga_color_byte(COLOR_LIGHT_GREY, COLOR_BLACK);
-    scrollback_active = false;
+    current_attribute = 0x0700; // Light-Grey fg and Black bg. Otherwise use vga_attribute_byte
+    follow_bottom = true;
     buffer_count = 0;
     buffer_start = 0;
     scroll_offset = 0;
@@ -49,24 +53,26 @@ void screen_init_scrollback(void)
 {
     memset(line_buffer, 0, sizeof(line_buffer));
     memset(current_screen, 0, sizeof(current_screen));
-    scrollback_active = true;
+    follow_bottom = false;
 }
 
 // Clear screen
 void screen_clear(void)
 {
-    uint16_t blank = ' ' | (current_color << 8);
+    uint16_t blank = ' ' | current_attribute;
     
     for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
         vga_buffer[i] = blank;
     }
     
-    if (scrollback_active) {
-        for (int y = 0; y < SCREEN_HEIGHT; y++) {
-            for (int x = 0; x < SCREEN_WIDTH; x++) {
-                current_screen[y][x] = blank;
-            }
+    for (int y = 0; y < SCREEN_HEIGHT; y++) {
+        for (int x = 0; x < SCREEN_WIDTH; x++) {
+            current_screen[y][x] = blank;
         }
+    }
+
+    for(int i = 0; i < BUFFER_LINES; i++){
+        line_len[i] = 0;
     }
     
     cursor_x = 0;
@@ -77,7 +83,7 @@ void screen_clear(void)
 // Add a line to scrollback buffer
 static void add_line_to_buffer(uint16_t *line)
 {
-    if (!scrollback_active) return;
+    if (follow_bottom) return;
     
     int write_pos = (buffer_start + buffer_count) % BUFFER_LINES;
     
@@ -97,53 +103,55 @@ static void add_line_to_buffer(uint16_t *line)
 // Refresh VGA display based on scroll offset
 static void refresh_display(void)
 {
-    if (!scrollback_active || scroll_offset == 0) {
+    if (follow_bottom || scroll_offset == 0) {
         // Show current screen
         for (int y = 0; y < SCREEN_HEIGHT; y++) {
             for (int x = 0; x < SCREEN_WIDTH; x++) {
                 vga_buffer[y * SCREEN_WIDTH + x] = current_screen[y][x];
             }
         }
-    } else {
-        // Show scrolled view
-        // Calculate which lines to display
-        int total_lines = buffer_count + SCREEN_HEIGHT;
-        int top_line = total_lines - SCREEN_HEIGHT - scroll_offset;
+        return;
+    }
+
+    // Show scrolled view
+    // Calculate which lines to display (It works, don't bother double checking)
+    int total_lines = buffer_count + SCREEN_HEIGHT;
+    int top_line = total_lines - SCREEN_HEIGHT - scroll_offset;
         
-        if (top_line < 0) top_line = 0;
+    if (top_line < 0) top_line = 0;
         
-        for (int y = 0; y < SCREEN_HEIGHT; y++) {
-            int source_line = top_line + y;
+    for (int y = 0; y < SCREEN_HEIGHT; y++) {
+        int source_line = top_line + y;
             
-            if (source_line < buffer_count) {
-                // From scrollback buffer
-                int buffer_idx = (buffer_start + source_line) % BUFFER_LINES;
+        if (source_line < buffer_count) {
+            // From scrollback buffer
+            int buffer_idx = (buffer_start + source_line) % BUFFER_LINES;
+            for (int x = 0; x < SCREEN_WIDTH; x++) {
+                vga_buffer[y * SCREEN_WIDTH + x] = line_buffer[buffer_idx][x];
+            }
+        } else {
+            // From current screen
+            int screen_line = source_line - buffer_count;
+            if (screen_line >= 0 && screen_line < SCREEN_HEIGHT) {
                 for (int x = 0; x < SCREEN_WIDTH; x++) {
-                    vga_buffer[y * SCREEN_WIDTH + x] = line_buffer[buffer_idx][x];
-                }
-            } else {
-                // From current screen
-                int screen_line = source_line - buffer_count;
-                if (screen_line >= 0 && screen_line < SCREEN_HEIGHT) {
-                    for (int x = 0; x < SCREEN_WIDTH; x++) {
-                        vga_buffer[y * SCREEN_WIDTH + x] = current_screen[screen_line][x];
-                    }
+                    vga_buffer[y * SCREEN_WIDTH + x] = current_screen[screen_line][x];
                 }
             }
         }
-        
-        // Show scroll indicator in top-right corner
-        vga_buffer[79] = '^' | 0x0E00;  // Yellow up arrow
     }
+        
+    // Show scroll indicator in top-right corner because it looks cool
+    vga_buffer[79] = '^' | 0x0E00;  // Yellow up arrow
 }
 
 // Scroll screen up by one line
-static void scroll_screen(void)
+// Used only for automatic scrolling after \n or writing more than SCREEN_WIDTH chars
+static inline void scroll_screen(void)
 {
-    uint16_t blank = ' ' | (current_color << 8);
+    uint16_t blank = ' ' | current_attribute;
     
     // Save top line to scrollback buffer
-    if (scrollback_active) {
+    if (!follow_bottom) {
         add_line_to_buffer(current_screen[0]);
     }
     
@@ -175,28 +183,33 @@ void screen_putchar(char c)
         scroll_offset = 0;
         refresh_display();
     }
-    
-    uint16_t attribute = current_color << 8;
-    
+        
     if (c == '\n') {
         cursor_x = 0;
         cursor_y++;
     } else if (c == '\r') {
         cursor_x = 0;
-    } else if (c == '\t') {
+    } else if (c == '\t') { // 4 space tab
         cursor_x = (cursor_x + 4) & ~(4 - 1);
     } else if (c == '\b') {
         if (cursor_x > 0) {
+            screen_invert_color();
             cursor_x--;
-            current_screen[cursor_y][cursor_x] = ' ' | attribute;
+            current_screen[cursor_y][cursor_x] = ' ' | current_attribute;
             if (scroll_offset == 0) {
-                vga_buffer[cursor_y * SCREEN_WIDTH + cursor_x] = ' ' | attribute;
+                vga_buffer[cursor_y * SCREEN_WIDTH + cursor_x] = ' ' | current_attribute;
             }
         }
     } else {
-        current_screen[cursor_y][cursor_x] = c | attribute;
+        int source_line = buffer_count - scroll_offset + cursor_y;
+        int buffer_idx = (buffer_start + source_line) % BUFFER_LINES;
+
+        // Update Line Length.
+        line_len[buffer_idx] = cursor_x+1;
+        
+        current_screen[cursor_y][cursor_x] = c | current_attribute;
         if (scroll_offset == 0) {
-            vga_buffer[cursor_y * SCREEN_WIDTH + cursor_x] = c | attribute;
+            vga_buffer[cursor_y * SCREEN_WIDTH + cursor_x] = c | current_attribute;
         }
         cursor_x++;
     }
@@ -222,16 +235,48 @@ void screen_write(const char* str)
 // Write string with color
 void screen_write_color(const char* str, vga_color fg, vga_color bg)
 {
-    uint8_t old_color = current_color;
-    current_color = vga_color_byte(fg, bg);
+    uint16_t old_attr = current_attribute;
+    current_attribute = vga_attribute_byte(fg, bg);
     screen_write(str);
-    current_color = old_color;
+    current_attribute = old_attr;
 }
 
 // Set color
 void screen_set_color(vga_color fg, vga_color bg)
 {
-    current_color = vga_color_byte(fg, bg);
+    current_attribute = vga_attribute_byte(fg, bg);
+}
+
+// 
+uint8_t screen_get_line_len(void){
+    int source_line = buffer_count - scroll_offset + cursor_y;
+    int buffer_idx = (buffer_start + source_line) % BUFFER_LINES;
+
+    return line_len[buffer_idx];
+}
+
+// Inverts the color where the cursor is.
+void screen_invert_color(void){
+    uint16_t *cursor = vga_buffer + cursor_y * SCREEN_WIDTH + cursor_x;
+    uint8_t attr = *cursor >> 8;
+    *cursor = (*cursor & 0xFF) | (((attr << 4) | (attr >> 4)) << 8); // cool one liner
+    // current char~~^          mirrored attributes ~~~^
+}
+
+// 
+void screen_clear_last_word(void){
+    uint16_t blank = ' ' | current_attribute;
+
+    int source_line = buffer_count - scroll_offset + cursor_y;
+    int buffer_idx = (buffer_start + source_line) % BUFFER_LINES;
+    
+    line_len[buffer_idx] = 0;
+    for(int i = 0; i < SCREEN_WIDTH; i++){
+        line_buffer[buffer_idx][i] = blank;
+        current_screen[cursor_y][i] = blank;
+    }
+
+    refresh_display();
 }
 
 // Get cursor
@@ -251,13 +296,13 @@ void screen_set_cursor(int x, int y)
 // Scroll up (show older content)
 void screen_scroll_up(void)
 {
-    if (!scrollback_active) return;
+    if (follow_bottom) return;
     
     // Maximum scroll is total lines minus screen height
     int max_scroll = buffer_count;
     
     if (scroll_offset < max_scroll) {
-        scroll_offset += 5;  // Scroll by 5 lines at a time
+        scroll_offset += 1;  // Scroll by 1 line at a time
         if (scroll_offset > max_scroll) {
             scroll_offset = max_scroll;
         }
@@ -268,10 +313,10 @@ void screen_scroll_up(void)
 // Scroll down (show newer content)
 void screen_scroll_down(void)
 {
-    if (!scrollback_active) return;
+    if (follow_bottom) return;
     
     if (scroll_offset > 0) {
-        scroll_offset -= 5;  // Scroll by 5 lines at a time
+        scroll_offset -= 1;  // Scroll by 1 line at a time
         if (scroll_offset < 0) {
             scroll_offset = 0;
         }

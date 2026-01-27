@@ -73,7 +73,7 @@ static void keyboard_handler(registers_t *regs)
         extended_scancode = true;
         return;
     }
-    
+
     // Handle key release
     if (scancode & 0x80) {
         scancode &= 0x7F;
@@ -201,14 +201,20 @@ void keyboard_readline_history(char *buffer, int max_length,
     screen_get_cursor(&start_x, &start_y);
     
     while (pos < max_length - 1) {
+        screen_invert_color();
         unsigned char c = keyboard_getchar();
         
+        screen_get_cursor(&start_x, &start_y);
         if (c == '\n') {
+            screen_invert_color();
             screen_putchar('\n');
             break;
         }
         else if (c == '\b') {
-            if (pos > 0) {
+            if(ctrl_pressed){
+                screen_clear_last_word();
+            }
+            else if (pos > 0) {
                 pos--;
                 buffer[pos] = '\0';
                 screen_putchar('\b');
@@ -272,6 +278,34 @@ void keyboard_readline_history(char *buffer, int max_length,
                     pos = strlen(buffer);
                     screen_write(buffer);
                 }
+            }
+        }
+        else if(c == KEY_LEFT_ARROW){
+            //  if use ctrl just to start of line (0 is reserved so the line starts at x = 1).
+            screen_invert_color();
+
+            if(ctrl_pressed){
+                pos = 0;
+                screen_set_cursor(2, start_y);
+            } else if(pos > 0){
+                pos--;
+                // Regular Left = move by one to the left
+                screen_set_cursor(start_x-1, start_y);
+            }
+        }
+        else if(c == KEY_RIGHT_ARROW){
+            screen_invert_color();
+            
+            uint8_t line_len = screen_get_line_len();
+            
+            if(ctrl_pressed){
+                pos = line_len;
+                // Jump to the end of line
+                screen_set_cursor(line_len, start_y);
+            } else if(start_x < line_len){  // Hardcoded to not allow the cursor to move on the void
+                pos++;
+                // Regular Left = move by one to the left
+                screen_set_cursor(start_x+1, start_y);
             }
         }
         else if (c >= 32 && c < 127) {

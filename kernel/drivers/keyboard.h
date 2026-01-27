@@ -20,6 +20,8 @@
 #define KEY_PAGE_UP     ((unsigned char)0x87)
 #define KEY_PAGE_DOWN   ((unsigned char)0x88)
 
+
+
 // Initialize the keyboard driver
 void keyboard_init(void);
 

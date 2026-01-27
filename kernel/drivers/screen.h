@@ -49,11 +49,14 @@ void screen_clear(void);
 
 // Color management
 void screen_set_color(vga_color fg, vga_color bg);
-uint8_t vga_color_byte(vga_color fg, vga_color bg);
+uint16_t vga_attribute_byte(vga_color fg, vga_color bg);
 
 // Cursor functions
 void screen_get_cursor(int *x, int *y);
 void screen_set_cursor(int x, int y);
+void screen_invert_color(void);
+uint8_t screen_get_line_len(void);
+void screen_clear_last_word(void);
 
 // Scrollback functions
 void screen_scroll_up(void);     // Page Up
