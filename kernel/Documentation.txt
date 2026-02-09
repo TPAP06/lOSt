@@ -1,0 +1,53 @@
+kernel_entry.asm:
+    Used as a small linker from assembly to c code
+
+    line 10: Clear state
+    line 13: Clear segment registers
+    line 21: Set up stack
+    line 24: Call kernel
+
+kernel.c:
+
+Drivers:
+    screen.c:
+        VGA text mode screen driver implementation
+        #define VGA_MEMORY 0xB8000
+            // This is the address dedicated to store pixel data on a graphics card.
+            // This allows the CPU to directly manipulate graphics by writing to that address.
+        static uint16_t *vga_buffer = (uint16_t *)VGA_MEMORY;
+            // That's why the vga_buffer begins from that address
+        void screen_init(void);
+            // Set's cursor to (0,0), foreground to light_grey and background to black and clears the screen.
+        void screen_putchar(char c);
+            // Handle special characters, use __builtin_expect for better branch structure
+            // Handle line wrap and scroll
+        void screen_write(const char *str);
+            // Uses "screen_putchar" to write a string character-by-character
+        void screen_write_color(const char *str, vga_color fg, vga_color bg);
+            // Momentarily changes "current_color", writes a string and resets "current_color" to the one before.
+        void screen_set_color(vga_color fg, vga_color bg);
+            // Used to set "current_color" to specified fg, bg.
+        void screen_get_cursor(int *x, int *y)
+        void screen_set_cursor(int x, int y)
+            // Get and set cursor.
+    screen.h:
+        enum vga_color;
+            // Includes 16 colors as enum
+        #define SCREEN_WIDTH 80
+        #define SCREEN_HEIGHT 25
+            // VGA specific width and height
+    
+    keyboard.c:
+        #define KEYBOARD_DATA_PORT 0x60
+            // I/O port address used in legacy systems (PS/2) to communicate with the keyboard.
+        #define KEYBOARD_STATUS_PORT 0x64
+            // Similarly this address holds the status of the controller
+        We also have values to check keyboard input:
+            static bool shift_pressed, caps_lock, ctrl_pressed, alt_pressed;
+            static const char scancode_to_ascii[], scancode_to_ascii_shift[];
+            
+
+        
+        
+        
+        

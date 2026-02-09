@@ -3,6 +3,8 @@
 #include "drivers/screen.h"
 #include "drivers/keyboard.h"
 #include "drivers/timer.h"
+#include "tty/console.h"
+#include "tty/screen_edit.h"
 #include "interrupts/idt.h"
 #include "interrupts/isr.h"
 #include "memory/pmm.h"      // ADD
@@ -12,7 +14,9 @@
 void kernel_main(void)
 {
     // Initialize screen (early)
-    screen_init();
+    // screen_init();
+    // We can't init screen early YET because it assumes heap is init.
+    // so we don't have a screen until heap is inti
     
     // Initialize interrupts
     isr_init();
@@ -37,12 +41,12 @@ void kernel_main(void)
     pmm_init(total_memory_kb);
     heap_init();
     
-    // NOW initialize scrollback (after heap is ready)
-    screen_init_scrollback();  // ADD THIS
-    
     // Initialize filesystem
     // vfs_init();  // TODO: Implement VFS
     
+    // Initialize screen
+    screen_init();
+
     // Initialize keyboard
     keyboard_init();
     

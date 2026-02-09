@@ -29,7 +29,7 @@ void shell_init(void)
     
     // Print welcome banner
     screen_write_color("================================\n", COLOR_LIGHT_CYAN, COLOR_BLACK);
-    screen_write_color("       Welcome to MyOS          \n", COLOR_YELLOW, COLOR_BLACK);
+    screen_write_color("       Welcome to lOSt          \n", COLOR_YELLOW, COLOR_BLACK);
     screen_write_color("================================\n", COLOR_LIGHT_CYAN, COLOR_BLACK);
     screen_write("\n");
     
@@ -134,13 +134,6 @@ void shell_execute(const char *input)
 void shell_run(void)
 {
     while (1) {
-        // Check if we're scrolled up
-        if (!screen_is_at_bottom()) {
-            // Show indicator
-            volatile uint16_t *vga = (volatile uint16_t *)0xB8000;
-            vga[79] = '^' | 0x0E00;  // Yellow up arrow in corner
-        }
-        
         shell_print_prompt();
         keyboard_readline_history(input_buffer, SHELL_INPUT_MAX,
                                   history, SHELL_HISTORY_SIZE, history_count, &history_write_pos);

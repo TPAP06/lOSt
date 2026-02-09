@@ -1,0 +1,34 @@
+screen.c:
+    in "screen_init" removed "cursor_x = cursor_y = 0;" since it's taken care of by "screen_clear" right after.
+
+    removed "current_colour"
+    added "current_attr"
+    "current_colour" was never used without casting to uint16 and shifting << 8.
+    so now we have pre calculated this value and only work with "current_attr"
+    cost: double the size.
+    gain: -1 instruction per char print for the shifting.
+
+    added "scrollback_buffer"
+    having only "vga_buffer" was very limitting, not storing any lines that were not visible.
+    "scrollback_buffer" is a buffer used for storing SCROLLBACK_LINES lines.
+    Now we write data dirrectly inside sb_buffer and use it and a var "view_top" to render the vga.
+
+    remove "cursor_y"
+    after applying scrollback we track cursor possition using "cursor_line + cursor_x" which is much more friendly for scrolling.
+    "cursor_y" can be buggy in cases where the cursor is not even on screen.
+
+    "screen_clear" now clears
+    the arrays: "vga_buffer", "scrollback_buffer", "line_len"
+    the vars: "view_top", "sb_start", "sb_head", "cursor_line", "cursor_x"
+    and sets: "follow_bottom" = true;
+
+    Rendering only occurs by default after scrolling or writing a string on screen (writing a char wont render in VGA for performance reasons)
+
+screen.h:
+    added #define SCROLLBACK_LINES 1024 
+
+
+
+
+Things i don't do cuz I'm too good of a programmer to be bothered:
+    Get/Set requests of *line_len should be clamped to <= SCREEN_WIDTH
