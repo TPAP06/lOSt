@@ -85,9 +85,6 @@ bool commands_execute(const char *name, int argc, char **argv)
 // ============================================================================
 
 // Help command
-// Help command (updated)
-// Help command (UPDATED)
-// Help command (SIMPLE VERSION)
 void cmd_help(int argc, char **argv)
 {
     (void)argc;
@@ -127,6 +124,7 @@ void cmd_help(int argc, char **argv)
     screen_write_color("Keyboard Shortcuts:\n", COLOR_YELLOW, COLOR_BLACK);
     screen_write("  UP/DOWN arrows - Navigate command history\n");
     screen_write("  BACKSPACE      - Delete character\n");
+    screen_write("  Ctrl + UP/DOWN - Sroll up/down");
     
     screen_write("\n");
     screen_write_color("Usage Examples:\n", COLOR_YELLOW, COLOR_BLACK);
@@ -146,7 +144,7 @@ void cmd_clear(int argc, char **argv)
     (void)argv;
     
     screen_clear();
-    screen_write_color("MyOS Shell\n\n", COLOR_YELLOW, COLOR_BLACK);
+    screen_write_color("lOSt \n\n", COLOR_YELLOW, COLOR_BLACK);
 }
 
 // Echo command
@@ -174,11 +172,11 @@ void cmd_info(int argc, char **argv)
     
     screen_write_color("\nSystem Information:\n", COLOR_YELLOW, COLOR_BLACK);
     screen_write_color("-------------------\n", COLOR_YELLOW, COLOR_BLACK);
-    screen_write("  OS Name:      MyOS\n");
-    screen_write("  Version:      0.4\n");
+    screen_write("  OS Name:      lOSt\n");
+    screen_write("  Version:      0.69\n");
     screen_write("  Architecture: x86_64\n");
     screen_write("  CPU Mode:     Long Mode (64-bit)\n");
-    screen_write("  Author:       Your Name\n");
+    screen_write("  Authors:      Your mum\n");
     screen_write("\n");
 }
 

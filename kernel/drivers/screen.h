@@ -6,12 +6,26 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "../lib/string.h"  // For types (size_t)
+
 // Screen dimensions
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
 
 // Scrollback buffer size (lines)
-#define SCROLLBACK_LINES 1000
+#define SCROLLBACK_LINES 200
+
+// Scrollback
+typedef struct{
+    uint16_t *buffer;       // sb buffer
+    uint16_t view_top;      // idx of fullscreen live window (W*H) on sb
+    uint16_t count;         // Number of rows inside the buffer
+    uint16_t scroll_offset; // Distance from bottom in rows
+    uint16_t start;         // Oldest line inside the buffer
+    bool follow_bottom;     // 
+}sb_t;
+
+#define LEFT_MARGIN 2
 
 // VGA colors
 typedef enum {
@@ -33,35 +47,16 @@ typedef enum {
     COLOR_WHITE = 15,
 } vga_color;
 
-// Initialize screen
-void screen_init(void);
+// Clears VGA
+void vga_clear(void);
 
-// Initialize scrollback buffer (call AFTER heap_init)
-void screen_init_scrollback(void);
-
-// Write functions
-void screen_write(const char* str);
-void screen_write_color(const char* str, vga_color fg, vga_color bg);
-void screen_putchar(char c);
-
-// Clear screen
-void screen_clear(void);
-
-// Color management
-void screen_set_color(vga_color fg, vga_color bg);
-uint16_t vga_attribute_byte(vga_color fg, vga_color bg);
+// Writing functions
+void vga_refresh(const uint16_t *fullscreen, size_t size);
+void vga_set_row(const uint16_t *row, uint8_t idx);
+void vga_putchar(uint8_t x, uint8_t y, uint16_t c, uint16_t attr);
 
 // Cursor functions
-void screen_get_cursor(int *x, int *y);
-void screen_set_cursor(int x, int y);
-void screen_invert_color(void);
-uint8_t screen_get_line_len(void);
-void screen_clear_last_word(void);
-
-// Scrollback functions
-void screen_scroll_up(void);     // Page Up
-void screen_scroll_down(void);   // Page Down
-void screen_scroll_to_bottom(void);
-bool screen_is_at_bottom(void);
+void vga_set_cursor(uint8_t x, uint8_t y);
+void vga_enable_cursor(bool flag);
 
 #endif // SCREEN_H
