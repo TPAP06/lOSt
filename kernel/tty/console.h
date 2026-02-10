@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 
+void console_run(void);
 
 
 #endif // CONSOLE_H

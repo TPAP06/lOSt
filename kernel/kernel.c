@@ -48,11 +48,14 @@ void kernel_main(void)
     screen_init();
 
     // Initialize keyboard
-    keyboard_init();
+    kbd_handler_init();
     
     // Initialize and run shell
-    shell_init();
-    shell_run();
+    // shell_init();
+    // shell_run();
+
+    // Testing keyboard and screen drivers with custom "text editor/console"
+    console_run();
     
     while (1) {
         __asm__ volatile ("hlt");
