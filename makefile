@@ -19,6 +19,8 @@ KERNEL_DIR = kernel
 # Source files
 KERNEL_C_SOURCES = $(wildcard $(KERNEL_DIR)/*.c) \
                    $(wildcard $(KERNEL_DIR)/drivers/*.c) \
+                   $(wildcard $(KERNEL_DIR)/input/*.c) \
+                   $(wildcard $(KERNEL_DIR)/tty/*.c) \
                    $(wildcard $(KERNEL_DIR)/lib/*.c) \
                    $(wildcard $(KERNEL_DIR)/interrupts/*.c) \
                    $(wildcard $(KERNEL_DIR)/shell/*.c) \
@@ -41,7 +43,7 @@ OS_IMG = os.img
 
 QEMU = qemu-system-x86_64
 
-# Phony targets
+# We love Phony
 .PHONY: all clean run debug info
 
 # Default target
@@ -100,7 +102,7 @@ $(OS_IMG): $(BOOT_BIN) $(STAGE2_BIN) $(KERNEL_BIN)
 run: $(OS_IMG)
 	$(QEMU) -drive format=raw,file=$(OS_IMG)
 
-# Run with debugging
+# Run with debugging, Life saver for early stage
 debug: $(OS_IMG)
 	$(QEMU) -drive format=raw,file=$(OS_IMG) -d int,cpu_reset -no-reboot -no-shutdown
 
@@ -111,6 +113,12 @@ info: $(KERNEL_ELF) $(KERNEL_BIN)
 	@echo ""
 	@echo "=== Kernel Binary Size ==="
 	ls -lh $(KERNEL_BIN)
+
+# I just want my terminal to look clean
+allClear: clear clean all run
+
+clear:
+	clear
 
 # Clean
 clean:
