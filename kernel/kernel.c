@@ -42,6 +42,8 @@ void kernel_main(void)
     heap_init();
     
     // Initialize filesystem
+    // Dawg what are you talking about?!
+    // We are so far from making a file system
     // vfs_init();  // TODO: Implement VFS
     
     // Initialize screen

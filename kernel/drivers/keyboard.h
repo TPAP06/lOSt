@@ -14,11 +14,11 @@ typedef enum{
 }key_action;
 
 typedef enum{
-    KBD_CTRL        = 1 >> 0,
-    KBD_CAPS_LOCK   = 1 >> 1,
-    KBD_ALT         = 1 >> 2,
-    KBD_SHIFT_R     = 1 >> 3,
-    KBD_SHIFT_L     = 1 >> 4
+    KBD_CTRL        = 1 << 0,
+    KBD_CAPS_LOCK   = 1 << 1,
+    KBD_ALT         = 1 << 2,
+    KBD_SHIFT_R     = 1 << 3,
+    KBD_SHIFT_L     = 1 << 4
 }kbd_mods;
 
 typedef enum{

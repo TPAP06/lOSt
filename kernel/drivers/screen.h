@@ -25,8 +25,6 @@ typedef struct{
     bool follow_bottom;     // 
 }sb_t;
 
-#define LEFT_MARGIN 2
-
 // VGA colors
 typedef enum {
     COLOR_BLACK = 0,
@@ -53,7 +51,7 @@ void vga_clear(void);
 // Writing functions
 void vga_refresh(const uint16_t *fullscreen, size_t size);
 void vga_set_row(const uint16_t *row, uint8_t idx);
-void vga_putchar(uint8_t x, uint8_t y, uint16_t c, uint16_t attr);
+void vga_putchar(uint8_t x, uint8_t y, uint16_t attr);
 
 // Cursor functions
 void vga_set_cursor(uint8_t x, uint8_t y);
