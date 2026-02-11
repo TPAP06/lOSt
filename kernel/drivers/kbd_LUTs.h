@@ -207,6 +207,7 @@ static const uint8_t keycode_to_text_us[KEY_MAX + 1] = {
     [KEY_SPACE] = ' ',
     [KEY_TAB] = '\t',
     [KEY_ENTER] = '\n',
+    [KEY_BACKSPACE] = '\b',
 
     [KEY_MINUS] = '-',
     [KEY_EQUAL] = '=',

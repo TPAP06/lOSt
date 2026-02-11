@@ -35,9 +35,9 @@ void vga_set_row(const uint16_t *row, uint8_t idx){
 }
 
 // Put character on screen
-void vga_putchar(uint8_t x, uint8_t y, uint16_t c, uint16_t attr)
+void vga_putchar(uint8_t x, uint8_t y, uint16_t attr)
 {
-    vga[y * SCREEN_WIDTH + x] = c | attr;
+    vga[y * SCREEN_WIDTH + x] = attr;
 }
 
 // Changes the position of the VGA hw cursor
@@ -51,6 +51,6 @@ void vga_set_cursor(uint8_t x, uint8_t y){
 }
 
 // Enable/Disable VGA hw cursor
-void vga_enable_cursor(bool flag){
+// void vga_enable_cursor(bool flag){
 
-}
+// }

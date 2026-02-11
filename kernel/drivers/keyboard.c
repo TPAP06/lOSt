@@ -75,6 +75,16 @@ bool kbd_pop_event(key_event *out){
     // Set "pressed"
     out->action = (scancode & 0x80) ? RELEASE : PRESS;
 
+    // Set modifications
+    switch (scancode & 0x7F)
+    {
+    case 0x1D: out->mods = KBD_CTRL;      break; // Left/ Right Ctrl (1D/ E0 1D)
+    case 0x2A: out->mods = KBD_SHIFT_L;   break; // Left Shift       (2A)
+    case 0x36: out->mods = KBD_SHIFT_R;   break; // Right Shift      (36)
+    case 0x38: out->mods = KBD_ALT;       break; // Left/ Right Alt  (38/ E0 38)
+    case 0x3A: out->mods = KBD_CAPS_LOCK; break; // Caps Lock        (3A)
+    }
+
     // Set keycode
     if(out->flags & KEY_FLAG_EXTENDED){
         out->code = ps2_set1_e0_to_keycode[scancode & 0x7F];

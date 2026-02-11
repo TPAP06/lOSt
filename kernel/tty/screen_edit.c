@@ -3,7 +3,7 @@
 
 #include "screen_edit.h"
 #include "../drivers/screen.h"
-#include "../drivers/keyboard.h"
+#include "../input/input_kbd.h"
 #include "../lib/string.h"
 #include "../memory/heap.h"
 
@@ -57,7 +57,8 @@ void screen_clear(void)
     for(size_t i = 0; i < SCROLLBACK_LINES * SCREEN_WIDTH; i++){
         sb.buffer[i] = blank;
     }
-    
+
+    // Init cursor top left
     cursor_x = 0;
     cursor_y = 0;
 
@@ -67,24 +68,24 @@ void screen_clear(void)
 }
 
 // Add a line to scrollback buffer
-static void add_line_to_buffer(uint16_t *line)
-{
-    if (sb.follow_bottom) return;
+// static void add_line_to_buffer(uint16_t *line)
+// {
+//     if (sb.follow_bottom) return;
     
-    int write_pos = (sb.start + sb.count) % SCROLLBACK_LINES;
+//     int write_pos = (sb.start + sb.count) % SCROLLBACK_LINES;
     
-    // Copy line to buffer
-    for (int x = 0; x < SCREEN_WIDTH; x++) {
-        sb.buffer[get_idx(x,write_pos)] = line[x];
-    }
+//     // Copy line to buffer
+//     for (int x = 0; x < SCREEN_WIDTH; x++) {
+//         sb.buffer[get_idx(x,write_pos)] = line[x];
+//     }
     
-    if (sb.count < SCROLLBACK_LINES) {
-        sb.count++;
-    } else {
-        // Buffer full, overwrite oldest
-        sb.start = (sb.start + 1) % SCROLLBACK_LINES;
-    }
-}
+//     if (sb.count < SCROLLBACK_LINES) {
+//         sb.count++;
+//     } else {
+//         // Buffer full, overwrite oldest
+//         sb.start = (sb.start + 1) % SCROLLBACK_LINES;
+//     }
+// }
 
 // Refresh VGA display based on scroll offset
 static void refresh_display(void)
@@ -93,7 +94,7 @@ static void refresh_display(void)
     vga_refresh(fullscreen, SCREEN_HEIGHT * SCREEN_WIDTH);
 
     // Show scroll indicator in top-right corner because it looks cool
-    vga_putchar(SCREEN_WIDTH-1, 0, '^', 0x0E00);    // Yellow up arrow
+    vga_putchar(SCREEN_WIDTH-1, 0, '^' | 0x0E00);    // Yellow up arrow
 }
 
 // Scroll screen up by one line
@@ -138,7 +139,7 @@ void screen_putchar(char c)
             // insert mode == 1: move line to the left by one
             // current_screen[cursor_y * SCREEN_WIDTH + cursor_x] = ' ' | current_attribute;
             cursor_x--;
-            vga_putchar(cursor_x, cursor_y, ' ', current_attribute);
+            vga_putchar(cursor_x, cursor_y, ' ' | current_attribute);
         }
     } else {
         int source_line = sb.count - sb.scroll_offset + cursor_y;
@@ -149,7 +150,7 @@ void screen_putchar(char c)
         
         // update scroll sb.buffer
         // current_screen[cursor_y * SCREEN_WIDTH + cursor_x] = c | current_attribute;
-        vga_putchar(cursor_x, cursor_y, c, current_attribute);
+        vga_putchar(cursor_x, cursor_y, c | current_attribute);
         cursor_x++;
     }
 
@@ -203,7 +204,8 @@ void screen_clear_last_word(void){
     // mode 1: starting on == blank char and clear up until you hit != blank
     uint16_t blank = ' ' | current_attribute;
 
-    for(; cursor_x <= LEFT_MARGIN; cursor_x--){
+    // left margin
+    for(; cursor_x <= 2; cursor_x--){
         // Stop at first whitespace
         if(sb.buffer[get_idx(cursor_x, cursor_y)] == blank) break; 
 
